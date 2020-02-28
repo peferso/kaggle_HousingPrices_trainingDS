@@ -4,7 +4,8 @@ import os
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.preprocessing import LabelEncoder
+import numpy as np
 
 # Set up code checking
 # if not os.path.exists("../input/train.csv"):
@@ -24,33 +25,57 @@ home_data = pd.read_csv(iowa_file_path)
 # Create target object and call it y
 y = home_data.SalePrice
 # Create X
-features = ['LotArea', 'YearBuilt', '1stFlrSF', '2ndFlrSF', 'FullBath', 'BedroomAbvGr', 'TotRmsAbvGrd']
-X = home_data[features]
+features = ['LotArea'] #, 'YearBuilt', '1stFlrSF', '2ndFlrSF', 'FullBath', 'BedroomAbvGr', 'TotRmsAbvGrd'
+# we add the categorical features
+cat_features = ['Neighborhood']
+# We store the numerical columns and will add the categorical variables transformed
+df = home_data[features].copy()
+
+#For each categorical feature there will be a transformed column.
+# Names of transformed columns are the same starting with "T".
+cat_Tfeatures = []
+for cf in cat_features:
+    cat_Tfeatures.append('T'+cf)
+
+le = LabelEncoder()
+# print(list(le.classes_))
+
+# Create a new column with the transformed categorical data
+for co, cf in zip(cat_Tfeatures, cat_features):
+    le.fit(home_data[cf])
+    df[co] = list(le.transform(home_data.loc[:, cf]))
+# print(list(le.inverse_transform(list(home_data['TNeighborhood']))))
+# print(list(home_data['Neighborhood']))
+
+X = df
 
 # Split into validation and training data
 train_X, val_X, train_y, val_y = train_test_split(X, y, random_state=1)
 
-# Specify Model:
-iowa_model = DecisionTreeRegressor(random_state=1)
-# Fit Model
-iowa_model.fit(train_X, train_y)
-
-# Make validation predictions and calculate mean absolute error
-val_predictions = iowa_model.predict(val_X)
-val_mae = mean_absolute_error(val_predictions, val_y)
-print("Validation MAE when not specifying max_leaf_nodes: {:,.0f}".format(val_mae))
-
-# Using best value for max_leaf_nodes
-iowa_model = DecisionTreeRegressor(max_leaf_nodes=100, random_state=1)
-iowa_model.fit(train_X, train_y)
-val_predictions = iowa_model.predict(val_X)
-val_mae = mean_absolute_error(val_predictions, val_y)
-print("Validation MAE for best value of max_leaf_nodes: {:,.0f}".format(val_mae))
-
+# Let us plot a learning curve with the test error and validation error
 # Define the model. Set random_state to 1
-rf_model = RandomForestRegressor(n_estimators=10, random_state=1)
-rf_model.fit(train_X, train_y)
-rf_val_predictions = rf_model.predict(val_X)
-rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)
-
-print("Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
+rf_model = RandomForestRegressor(n_estimators=100, random_state=1)
+trEr = []
+vaEr = []
+for i in range(len(train_X)):
+    sample = list(np.random.choice(len(train_X), i+1, replace=False))
+    # sample = sample.sort()
+    print(len(train_X), i+1, sample, type(train_X), type(train_y))
+    inpX = train_X.loc[sample, :].copy()
+    inpy = train_y.index[sample]
+    #Fit the model using a sample of size "i" randomly selected from train data
+    rf_model.fit(inpX, inpy)
+    #Compute the training error
+    rf_tra_predictions = rf_model.predict(inpX)
+    rf_tra_mae = mean_absolute_error(rf_tra_predictions, inpy)
+    #Compute the validation error
+    rf_val_predictions = rf_model.predict(val_X)
+    rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)
+    #store the errors in lists
+    trEr.append(rf_tra_mae)
+    vaEr.append(rf_val_mae)
+    print("")
+    print(i, " Training MAE for Random Forest Model: {:,.0f}".format(rf_tra_mae))
+    print(i, " Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
+    inpX.drop()
+    inpy.drop()
