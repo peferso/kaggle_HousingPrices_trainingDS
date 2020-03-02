@@ -6,6 +6,7 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
+from plots import *
 
 # Set up code checking
 # if not os.path.exists("../input/train.csv"):
@@ -57,12 +58,12 @@ train_X, val_X, train_y, val_y = train_test_split(X, y, random_state=1)
 rf_model = RandomForestRegressor(n_estimators=100, random_state=1)
 trEr = []
 vaEr = []
-for i in range(len(train_X)):
-    sample = list(np.random.choice(len(train_X), i+1, replace=False))
-    # sample = sample.sort()
-    print(len(train_X), i+1, sample, type(train_X), type(train_y))
-    inpX = train_X.loc[sample, :].copy()
-    inpy = train_y.index[sample]
+szls = []
+Nd = len(train_X)
+tt = 1
+for i in range(Nd):
+    inpX = train_X.sample(n=i+1)
+    inpy = train_y.sample(n=i+1)
     #Fit the model using a sample of size "i" randomly selected from train data
     rf_model.fit(inpX, inpy)
     #Compute the training error
@@ -74,8 +75,13 @@ for i in range(len(train_X)):
     #store the errors in lists
     trEr.append(rf_tra_mae)
     vaEr.append(rf_val_mae)
-    print("")
-    print(i, " Training MAE for Random Forest Model: {:,.0f}".format(rf_tra_mae))
-    print(i, " Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
-    inpX.drop()
-    inpy.drop()
+    szls.append(i+1)
+    print("==========")
+    print(i, " of ", Nd, " Training MAE for Random Forest Model: {:,.0f}".format(rf_tra_mae))
+    print(i, " of ", Nd, " Validation MAE for Random Forest Model: {:,.0f}".format(rf_val_mae))
+    if i > tt*100:
+        tt = tt +1
+        scatPlotTwoLists(szls, trEr,
+                         szls, vaEr,
+                         'size of train set', 'error', 'learning curve using LotArea and Neighborhood',
+                         'lc_01.png', 100, True)
