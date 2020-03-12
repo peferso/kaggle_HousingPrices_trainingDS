@@ -16,6 +16,8 @@ from plots import *
 # binder.bind(globals())
 # from learntools.machine_learning.ex7 import *
 
+# hola
+
 if os.name == 'nt':
     iowa_file_path =r"C:\Users\pedfernandez\PycharmProjects\kaggle\housing_prices_learning_comp\data\train.csv"
 else:
